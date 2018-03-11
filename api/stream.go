@@ -4,7 +4,25 @@ import (
 	"net/http"
 	"github.com/s4kibs4mi/belle-stream/stream"
 	"github.com/hybridgroup/mjpeg"
+	"fmt"
 )
+
+func recovery(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rvr := recover(); rvr != nil {
+				resp := response{
+					Status: http.StatusInternalServerError,
+					Error:  fmt.Errorf("%v", rvr),
+				}
+				resp.ServeJSON(w)
+				return
+			}
+		}()
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
 
 func startStream(w http.ResponseWriter, r *http.Request) {
 	err := stream.StartStream()

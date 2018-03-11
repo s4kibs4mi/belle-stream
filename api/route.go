@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"context"
 	"time"
-	"github.com/go-chi/chi/middleware"
 )
 
 var routes = chi.NewRouter()
 var server *http.Server
 
 func StartServer() error {
-	routes.Use(middleware.Recoverer)
 	routes.Mount("/", defaultRoutes())
 
 	server = &http.Server{
@@ -28,9 +26,13 @@ func StartServer() error {
 
 func defaultRoutes() http.Handler {
 	h := chi.NewRouter()
-	h.Get("/start", startStream)
-	h.Get("/stop", stopStream)
-	h.Handle("/cam", serveStream())
+	h.Group(func(r chi.Router) {
+		r.Use(recovery)
+
+		r.Get("/start", startStream)
+		r.Get("/stop", stopStream)
+		r.Handle("/cam", serveStream())
+	})
 	return h
 }
 
