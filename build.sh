@@ -8,7 +8,10 @@ if [ $# -eq 0 ]; then
     exit
 fi
 
-go get -u .
+echo "Getting dependencies..."
+go get -u -v .
+echo "Building application binary..."
 go build -o build/belle-stream -v .
-
+ehco "Building docker image..."
 docker build . -t sakibsami/belle-stream:$1
+echo "Tasks has been completed"
