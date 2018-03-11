@@ -7,11 +7,19 @@ import (
 )
 
 var isStarted = false
+var shouldSave = false
 var webCam *gocv.VideoCapture
+var vidWriter *gocv.VideoWriter
 var stream = mjpeg.NewStream()
 var err error
 
-func StartStream() error {
+func catchIfFall() {
+	if err := recover(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func StartStream(shouldSave bool) error {
 	if isStarted {
 		return nil
 	}
@@ -19,28 +27,46 @@ func StartStream() error {
 	if err != nil {
 		return err
 	}
+	if shouldSave {
+		shouldSave = true
+		err := StartVideoRecord()
+		if err != nil {
+			webCam.Close()
+			return err
+		}
+	}
 	go capture()
 	isStarted = true
 	return nil
 }
 
-func StartVideoRecord() {
-
+func StartVideoRecord() error {
+	vidWriter, err = gocv.VideoWriterFile("/Users/sakib/record.avi", "MJPG", 10, 1024, 720)
+	return err
 }
 
 func StopStream() error {
 	if isStarted {
 		isStarted = false
+		StopVideoRecord()
 		return webCam.Close()
 	}
 	return nil
 }
 
 func StopVideoRecord() {
-
+	if shouldSave {
+		err := vidWriter.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+		shouldSave = false
+	}
 }
 
 func capture() {
+	defer catchIfFall()
+
 	img := gocv.NewMat()
 	for {
 		if !isStarted {
@@ -56,6 +82,12 @@ func capture() {
 
 		buf, _ := gocv.IMEncode(".jpg", img)
 		stream.UpdateJPEG(buf)
+		if shouldSave {
+			err := vidWriter.Write(img)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
 	}
 }
 

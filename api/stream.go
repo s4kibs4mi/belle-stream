@@ -25,7 +25,7 @@ func recovery(next http.Handler) http.Handler {
 }
 
 func startStream(w http.ResponseWriter, r *http.Request) {
-	err := stream.StartStream()
+	err := stream.StartStream(r.URL.Query().Get("save") == "true")
 	if err != nil {
 		resp := response{
 			Status: http.StatusInternalServerError,
@@ -33,9 +33,6 @@ func startStream(w http.ResponseWriter, r *http.Request) {
 		}
 		resp.ServeJSON(w)
 		return
-	}
-	if r.URL.Query().Get("save") == "true" {
-		stream.StartVideoRecord()
 	}
 	resp := response{
 		Status:  http.StatusOK,
